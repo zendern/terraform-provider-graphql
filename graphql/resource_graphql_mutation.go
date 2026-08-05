@@ -207,7 +207,7 @@ func resourceGraphqlRead(ctx context.Context, d *schema.ResourceData, m interfac
 					}
 
 					if _, isString := remoteVal.(string); !isString {
-						bytes, err := json.Marshal(remoteVal)
+						bytes, err := marshalNoEscape(remoteVal)
 						if err != nil {
 							return diag.FromErr(err)
 						}
@@ -331,11 +331,10 @@ func computeMutationVariables(queryResponseBytes []byte, d *schema.ResourceData)
 		// Combine computed read mutation variables with provided input variables
 		rvks := make(map[string]string)
 		for k, v := range readQueryVariables {
-			// rvks[k] = v.(string)
 			if _, ok := v.(string); ok {
 				rvks[k] = v.(string)
 			} else {
-				bytes, err := json.Marshal(v)
+				bytes, err := marshalNoEscape(v)
 				if err != nil {
 					return err
 				}
@@ -355,7 +354,7 @@ func computeMutationVariables(queryResponseBytes []byte, d *schema.ResourceData)
 			if _, ok := v.(string); ok {
 				dvks[k] = v.(string)
 			} else {
-				bytes, err := json.Marshal(v)
+				bytes, err := marshalNoEscape(v)
 				if err != nil {
 					return err
 				}
@@ -374,7 +373,7 @@ func computeMutationVariables(queryResponseBytes []byte, d *schema.ResourceData)
 			if _, ok := v.(string); ok {
 				mvks[k] = v.(string)
 			} else {
-				bytes, err := json.Marshal(v)
+				bytes, err := marshalNoEscape(v)
 				if err != nil {
 					return err
 				}

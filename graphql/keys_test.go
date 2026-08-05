@@ -184,6 +184,32 @@ func TestMapQueryResponseComplex(t *testing.T) {
 
 }
 
+func TestMapQueryResponseHTMLEscapedCharsInNestedObjects(t *testing.T) {
+	// Regression test: values containing <, >, or & that live inside a nested
+	// object must still be locatable. Previously json.Marshal would HTML-escape
+	// the enclosing object, breaking the substring comparison against the raw
+	// input value and producing a null query_response_input_key_map entry.
+	body := `{"data": {"resource": {"config": {"template": "a<b>c&d"}, "tags": ["x<y>z"]}}}`
+	var foo map[string]interface{}
+	if err := json.Unmarshal([]byte(body), &foo); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	cases := []struct {
+		value     string
+		expectKey string
+	}{
+		{value: "a<b>c&d", expectKey: "data.resource.config.template"},
+		{value: "x<y>z", expectKey: "data.resource.tags[0]"},
+	}
+
+	for i, c := range cases {
+		keyOut, ok := mapQueryResponseInputKey(foo, c.value, "", nil)
+		assert.True(t, ok, "test case %d: expected ok=true for value %q", i, c.value)
+		assert.Equal(t, c.expectKey, keyOut, "test case %d", i)
+	}
+}
+
 func TestMapQueryResponseJSONString(t *testing.T) {
 	var foo map[string]interface{}
 	err := json.Unmarshal([]byte(datablob), &foo)

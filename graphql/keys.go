@@ -1,12 +1,23 @@
 package graphql
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"hash/crc32"
 	"strconv"
 	"strings"
 )
+
+func marshalNoEscape(v interface{}) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(v); err != nil {
+		return nil, err
+	}
+	return bytes.TrimRight(buf.Bytes(), "\n"), nil
+}
 
 func buildResourceKeyArgs(key string) []string {
 	if key == "" {
@@ -101,7 +112,7 @@ func mapQueryResponseInputKey(m interface{}, value, prev string, parentKeys []st
 			var jsonV string
 			// Check if v is a string, and if not, marshal it as a json string for comparison
 			if str, isString := v.(string); !isString {
-				bytes, err := json.Marshal(v)
+				bytes, err := marshalNoEscape(v)
 				if err != nil {
 					return
 				}
