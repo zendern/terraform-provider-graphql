@@ -18,6 +18,26 @@ Please note we have a code of conduct, please follow it in all your interactions
 4. You may merge the Pull Request in once you have the sign-off of at least of of this repository's maintainers, or if you 
    do not have permission to do that, you may request a maintainer to merge it for you.
 
+## Local Development
+
+The `GNUmakefile` pins the same tool versions CI uses and as listed below. If you run `make fulltest` it will setup most things for you automatically assuming your go version is >= 1.21 and you are using tfenv to manage terraform versions. Otherwise manually configuring versions to match below is required.
+
+### Requirements
+
+The `GNUmakefile` sets these for its targets so local runs match CI:
+
+| Tool | Version |
+| --- | --- |
+| Go | `1.17.13` |
+| Terraform | `1.0.5` |
+| GoReleaser | `v1.5.0` |
+
+If your setup differs from the defaults above:
+
+- **Go:** If your Go predates 1.21 install Go 1.17 yourself, e.g. via [`asdf`](https://asdf-vm.com/) or [`goenv`](https://github.com/go-nv/goenv).
+- **Terraform:** If you manage Terraform another way, make `1.0.5` your active version.
+- **GoReleaser:** __Warning__: Later GoReleaser versions changed the CLI flags and config schema and will not work with this repo's config as-is.
+
 ## Code of Conduct
 
 ### Our Pledge

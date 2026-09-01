@@ -1,3 +1,10 @@
+# Pins version of tools to match that of what we use in CI
+# assumes you are using tfenv to manage your terraform versions
+# and have a go version >= 1.21 where toolchains were introduced. 
+export GOTOOLCHAIN := go1.17
+export TFENV_TERRAFORM_VERSION := 1.0.5
+GORELEASER_VERSION := v1.5.0
+
 GOPATH := $(shell go env | grep GOPATH | sed 's/GOPATH="\(.*\)"/\1/')
 PATH := $(GOPATH)/bin:$(PATH)
 export $(PATH)
@@ -8,7 +15,7 @@ help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 fetch: ## download makefile dependencies
-	@hash goreleaser 2>/dev/null || go get -u -v github.com/goreleaser/goreleaser
+	go install github.com/goreleaser/goreleaser@$(GORELEASER_VERSION)
 
 clean: ## cleans previously built binaries and test folders
 	@for f in $(TEST_DESTS); do \
@@ -38,4 +45,4 @@ copyplugins: ## copy plugins to test folders
 test: ## test
 	@cd e2e && $(MAKE) test
 
-fulltest: build test ## build and test
+fulltest: build copyplugins test ## build, copy plugins to test folders, and test
