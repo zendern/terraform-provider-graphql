@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/99designs/gqlgen v0.11.3
 	github.com/vektah/gqlparser/v2 v2.0.1
+	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 )
 
 require (
