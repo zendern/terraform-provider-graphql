@@ -6,24 +6,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func queryExecute(ctx context.Context, d *schema.ResourceData, m interface{}, querySource, variableSource string, usePagination bool) (*GqlQueryResponse, []byte, error) {
+	config := m.(*graphqlProviderConfig)
 	query := d.Get(querySource).(string)
 	inputVariables := d.Get(variableSource).(map[string]interface{})
-	apiURL := m.(*graphqlProviderConfig).GQLServerUrl
-	headers := m.(*graphqlProviderConfig).RequestHeaders
-	authorizationHeaders := m.(*graphqlProviderConfig).RequestAuthorizationHeaders
 
 	if usePagination {
-		return executePaginatedQuery(ctx, query, inputVariables, apiURL, headers, authorizationHeaders)
+		return executePaginatedQuery(ctx, config, query, inputVariables)
 	}
-	return executeSingleQuery(ctx, query, inputVariables, apiURL, headers, authorizationHeaders)
+	return executeSingleQuery(ctx, config, query, inputVariables)
 }
 
 func prepareQueryVariables(inputVariables map[string]interface{}, cursor string) map[string]interface{} {
@@ -47,7 +43,7 @@ func prepareQueryVariables(inputVariables map[string]interface{}, cursor string)
 	return currentVars
 }
 
-func executeGraphQLRequest(ctx context.Context, query string, variables map[string]interface{}, apiURL string, headers, authorizationHeaders map[string]interface{}) (*GqlQueryResponse, []byte, error) {
+func executeGraphQLRequest(ctx context.Context, config *graphqlProviderConfig, query string, variables map[string]interface{}) (*GqlQueryResponse, []byte, error) {
 	var queryBodyBuffer bytes.Buffer
 
 	queryObj := GqlQuery{
@@ -59,27 +55,21 @@ func executeGraphQLRequest(ctx context.Context, query string, variables map[stri
 		return nil, nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, &queryBodyBuffer)
+	req, err := http.NewRequestWithContext(ctx, "POST", config.GQLServerUrl, &queryBodyBuffer)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	req.Header.Set("Accept", "application/json; charset=utf-8")
-	for key, value := range authorizationHeaders {
+	for key, value := range config.RequestAuthorizationHeaders {
 		req.Header.Set(key, value.(string))
 	}
-	for key, value := range headers {
+	for key, value := range config.RequestHeaders {
 		req.Header.Set(key, value.(string))
 	}
 
-	client := &http.Client{}
-	if logging.IsDebugOrHigher() {
-		log.Printf("[DEBUG] Enabling HTTP requests/responses tracing")
-		client.Transport = logging.NewTransport("GraphQL", http.DefaultTransport)
-	}
-
-	resp, err := client.Do(req)
+	resp, err := config.client.Do(req)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -95,12 +85,12 @@ func executeGraphQLRequest(ctx context.Context, query string, variables map[stri
 	return &gqlResponse, body, nil
 }
 
-func executeSingleQuery(ctx context.Context, query string, inputVariables map[string]interface{}, apiURL string, headers, authorizationHeaders map[string]interface{}) (*GqlQueryResponse, []byte, error) {
+func executeSingleQuery(ctx context.Context, config *graphqlProviderConfig, query string, inputVariables map[string]interface{}) (*GqlQueryResponse, []byte, error) {
 	variables := prepareQueryVariables(inputVariables, "")
-	return executeGraphQLRequest(ctx, query, variables, apiURL, headers, authorizationHeaders)
+	return executeGraphQLRequest(ctx, config, query, variables)
 }
 
-func executePaginatedQuery(ctx context.Context, query string, inputVariables map[string]interface{}, apiURL string, headers, authorizationHeaders map[string]interface{}) (*GqlQueryResponse, []byte, error) {
+func executePaginatedQuery(ctx context.Context, config *graphqlProviderConfig, query string, inputVariables map[string]interface{}) (*GqlQueryResponse, []byte, error) {
 	var allResponses []GqlQueryResponse
 	var finalResponseData []map[string]interface{}
 	var finalResponseErrors []GqlError
@@ -109,7 +99,7 @@ func executePaginatedQuery(ctx context.Context, query string, inputVariables map
 	for {
 		variables := prepareQueryVariables(inputVariables, lastCursor)
 
-		gqlResponse, _, err := executeGraphQLRequest(ctx, query, variables, apiURL, headers, authorizationHeaders)
+		gqlResponse, _, err := executeGraphQLRequest(ctx, config, query, variables)
 		if err != nil {
 			return nil, nil, err
 		}

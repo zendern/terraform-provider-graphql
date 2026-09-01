@@ -3,6 +3,7 @@ package graphql
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -38,6 +39,18 @@ func Provider() *schema.Provider {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"rate_limit_per_second": {
+				Type:        schema.TypeFloat,
+				Optional:    true,
+				Default:     0,
+				Description: "Maximum sustained GraphQL requests per second across the provider instance. 0 (default) disables rate limiting, preserving current behavior.",
+			},
+			"rate_limit_burst": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Default:     1,
+				Description: "Maximum burst of requests allowed above the sustained rate. Only applies when rate_limit_per_second is non-zero.",
+			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"graphql_mutation": resourceGraphqlMutation(),
@@ -53,9 +66,12 @@ func graphqlConfigure(ctx context.Context, d *schema.ResourceData) (interface{},
 	diags := diag.Diagnostics{}
 
 	config := &graphqlProviderConfig{
-		GQLServerUrl:   d.Get("url").(string),
-		RequestHeaders: d.Get("headers").(map[string]interface{}),
+		GQLServerUrl:       d.Get("url").(string),
+		RequestHeaders:     d.Get("headers").(map[string]interface{}),
+		RateLimitPerSecond: d.Get("rate_limit_per_second").(float64),
+		RateLimitBurst:     d.Get("rate_limit_burst").(int),
 	}
+	config.client = newHTTPClient(config)
 
 	oauth2LoginQuery := d.Get("oauth2_login_query").(string)
 	oauth2LoginQueryVariables := d.Get("oauth2_login_query_variables").(map[string]interface{})
@@ -94,6 +110,9 @@ type graphqlProviderConfig struct {
 	GQLServerUrl                string
 	RequestHeaders              map[string]interface{}
 	RequestAuthorizationHeaders map[string]interface{}
+	RateLimitPerSecond          float64
+	RateLimitBurst              int
+	client                      *http.Client
 }
 
 func getOAuth2LoginQueryAttributeValue(attribute string, data map[string]interface{}) (string, error) {
