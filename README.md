@@ -26,6 +26,8 @@ A [Terraform](https://terraform.io) [GraphQL](https://graphql.org/) provider to 
 #### Click [HERE](https://sullivtr.github.io/terraform-provider-graphql) to view the documentation site.
 
 ## Testing this provider:
+> See [Local Development](CONTRIBUTING.md#local-development) for setup details.
+
 - In the root of this project, run `make fulltest`
   This will build the plugin, and copy the binaries to the basic_test/terraform.d/* folder and run the E2E Test.
 

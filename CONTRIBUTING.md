@@ -12,11 +12,31 @@ Please note we have a code of conduct, please follow it in all your interactions
 2. Update the README.md with details of changes to the provider, including any input variable and outputs changes, or general changes in functionality.
 3. Update or add tests to reflect changes you make, and ensure tests are passing. 
    a. This project currently has a single E2E test, which covers the full usage of this provider. Depending on the changes you make, it may be necessary to add an additional test case. 
-   > NOTE: The E2E test spins up a very basic graphql server in the background in order to test realistic GraphQL scenarios with real terraform templates. The scope of your changes may require adding functionality to the test's graphql server, which is located [HERE](test/gql-server/server.go).
+   > NOTE: The E2E test spins up a very basic graphql server in the background in order to test realistic GraphQL scenarios with real terraform templates. The scope of your changes may require adding functionality to the test's graphql server, which is located [HERE](e2e/gql-server/server.go).
    b. This project also includes unit/acceptance tests for the `graphql` package. 
    c. All testing is automated by the github actions (`e2e test` & `acceptance tests`) 
 4. You may merge the Pull Request in once you have the sign-off of at least of of this repository's maintainers, or if you 
    do not have permission to do that, you may request a maintainer to merge it for you.
+
+## Local Development
+
+The `GNUmakefile` pins the same tool versions CI uses and as listed below. If you run `make fulltest` it will setup most things for you automatically assuming your go version is >= 1.21 and you are using tfenv to manage terraform versions. Otherwise manually configuring versions to match below is required.
+
+### Requirements
+
+The `GNUmakefile` sets these for its targets so local runs match CI:
+
+| Tool | Version |
+| --- | --- |
+| Go | `1.17.13` |
+| Terraform | `1.0.5` |
+| GoReleaser | `v1.5.0` |
+
+If your setup differs from the defaults above:
+
+- **Go:** If your Go predates 1.21 install Go 1.17 yourself, e.g. via [`asdf`](https://asdf-vm.com/) or [`goenv`](https://github.com/go-nv/goenv).
+- **Terraform:** If you manage Terraform another way, make `1.0.5` your active version.
+- **GoReleaser:** __Warning__: Later GoReleaser versions changed the CLI flags and config schema and will not work with this repo's config as-is.
 
 ## Code of Conduct
 
